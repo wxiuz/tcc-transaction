@@ -3,7 +3,6 @@ package org.mengyun.tcctransaction;
 import org.apache.log4j.Logger;
 import org.mengyun.tcctransaction.api.TransactionContext;
 import org.mengyun.tcctransaction.api.TransactionStatus;
-import org.mengyun.tcctransaction.api.TransactionXid;
 import org.mengyun.tcctransaction.common.TransactionType;
 
 import java.util.Deque;
@@ -36,13 +35,24 @@ public class TransactionManager {
 
     }
 
+    /**
+     * 开启一个新的事务，并将事务信息落库
+     *
+     * @param uniqueIdentify
+     * @return
+     */
     public Transaction begin(Object uniqueIdentify) {
-        Transaction transaction = new Transaction(uniqueIdentify,TransactionType.ROOT);
+        Transaction transaction = new Transaction(uniqueIdentify, TransactionType.ROOT);
         transactionRepository.create(transaction);
         registerTransaction(transaction);
         return transaction;
     }
 
+    /**
+     * 开启一个新的事务，并将事务信息落库
+     *
+     * @return
+     */
     public Transaction begin() {
         Transaction transaction = new Transaction(TransactionType.ROOT);
         transactionRepository.create(transaction);
@@ -50,15 +60,26 @@ public class TransactionManager {
         return transaction;
     }
 
+    /**
+     * 事务传播，在服务提供者方创建一个分支事务
+     *
+     * @param transactionContext
+     * @return
+     */
     public Transaction propagationNewBegin(TransactionContext transactionContext) {
-
         Transaction transaction = new Transaction(transactionContext);
         transactionRepository.create(transaction);
-
         registerTransaction(transaction);
         return transaction;
     }
 
+    /**
+     * 判断一个事务是否存在
+     *
+     * @param transactionContext
+     * @return
+     * @throws NoExistedTransactionException
+     */
     public Transaction propagationExistBegin(TransactionContext transactionContext) throws NoExistedTransactionException {
         Transaction transaction = transactionRepository.findByXid(transactionContext.getXid());
 
@@ -71,18 +92,20 @@ public class TransactionManager {
         }
     }
 
+    /**
+     * 提交事务
+     *
+     * @param asyncCommit
+     */
     public void commit(boolean asyncCommit) {
-
         final Transaction transaction = getCurrentTransaction();
-
+        // 将事务状态更改为CONFIRMING，表示事务提交中
         transaction.changeStatus(TransactionStatus.CONFIRMING);
-
         transactionRepository.update(transaction);
-
+        // 异步提交则通过开启线程异步处理
         if (asyncCommit) {
             try {
                 Long statTime = System.currentTimeMillis();
-
                 executorService.submit(new Runnable() {
                     @Override
                     public void run() {
@@ -99,16 +122,16 @@ public class TransactionManager {
         }
     }
 
-
+    /**
+     * 回滚事务
+     *
+     * @param asyncRollback
+     */
     public void rollback(boolean asyncRollback) {
-
         final Transaction transaction = getCurrentTransaction();
         transaction.changeStatus(TransactionStatus.CANCELLING);
-
         transactionRepository.update(transaction);
-
         if (asyncRollback) {
-
             try {
                 executorService.submit(new Runnable() {
                     @Override
@@ -121,7 +144,6 @@ public class TransactionManager {
                 throw new CancellingException(rollbackException);
             }
         } else {
-
             rollbackTransaction(transaction);
         }
     }
@@ -161,11 +183,9 @@ public class TransactionManager {
 
 
     private void registerTransaction(Transaction transaction) {
-
         if (CURRENT.get() == null) {
             CURRENT.set(new LinkedList<Transaction>());
         }
-
         CURRENT.get().push(transaction);
     }
 

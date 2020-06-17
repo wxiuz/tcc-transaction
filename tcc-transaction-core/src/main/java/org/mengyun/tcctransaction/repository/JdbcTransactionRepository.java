@@ -3,7 +3,6 @@ package org.mengyun.tcctransaction.repository;
 
 import org.mengyun.tcctransaction.Transaction;
 import org.mengyun.tcctransaction.api.TransactionStatus;
-import org.mengyun.tcctransaction.serializer.JacksonJsonSerializer;
 import org.mengyun.tcctransaction.serializer.KryoPoolSerializer;
 import org.mengyun.tcctransaction.serializer.ObjectSerializer;
 import org.mengyun.tcctransaction.utils.CollectionUtils;
@@ -17,16 +16,29 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * 关系型数据库存储TCC事务日志
+ * <p>
  * Created by changmingxie on 10/30/15.
  */
 public class JdbcTransactionRepository extends CachableTransactionRepository {
-
+    /**
+     * 事务所属应用
+     */
     private String domain;
 
+    /**
+     * 事务日志表的后缀
+     */
     private String tbSuffix;
 
+    /**
+     * TCC事务日志数据源
+     */
     private DataSource dataSource;
 
+    /**
+     * 日志内容序列化器
+     */
     private ObjectSerializer serializer = new KryoPoolSerializer();
 
     public String getDomain() {
@@ -57,14 +69,18 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         return dataSource;
     }
 
+    /**
+     * 添加新事务
+     *
+     * @param transaction
+     * @return
+     */
     protected int doCreate(Transaction transaction) {
-
         Connection connection = null;
         PreparedStatement stmt = null;
 
         try {
             connection = this.getConnection();
-
             StringBuilder builder = new StringBuilder();
             builder.append("INSERT INTO " + getTableName() +
                     "(GLOBAL_TX_ID,BRANCH_QUALIFIER,TRANSACTION_TYPE,CONTENT,STATUS,RETRIED_COUNT,CREATE_TIME,LAST_UPDATE_TIME,VERSION");
@@ -75,6 +91,7 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
             stmt.setBytes(1, transaction.getXid().getGlobalTransactionId());
             stmt.setBytes(2, transaction.getXid().getBranchQualifier());
             stmt.setInt(3, transaction.getTransactionType().getId());
+            // 事务对象序列化后存储至库中
             stmt.setBytes(4, serializer.serialize(transaction));
             stmt.setInt(5, transaction.getStatus().getId());
             stmt.setInt(6, transaction.getRetriedCount());
@@ -102,6 +119,12 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         }
     }
 
+    /**
+     * 更新事务
+     *
+     * @param transaction
+     * @return
+     */
     protected int doUpdate(Transaction transaction) {
         Connection connection = null;
         PreparedStatement stmt = null;
@@ -150,6 +173,12 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         }
     }
 
+    /**
+     * 删除事务
+     *
+     * @param transaction
+     * @return
+     */
     protected int doDelete(Transaction transaction) {
         Connection connection = null;
         PreparedStatement stmt = null;
@@ -192,6 +221,12 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         return null;
     }
 
+    /**
+     * 查询所有异常事务
+     *
+     * @param date
+     * @return
+     */
     @Override
     protected List<Transaction> doFindAllUnmodifiedSince(java.util.Date date) {
 
@@ -328,6 +363,11 @@ public class JdbcTransactionRepository extends CachableTransactionRepository {
         }
     }
 
+    /**
+     * 获取事务日志存储表，默认是TCC_TRANSACTION，如果自定义了后缀则为TCC_TRANSACTION${tbSuffix}
+     *
+     * @return
+     */
     private String getTableName() {
         return StringUtils.isNotEmpty(tbSuffix) ? "TCC_TRANSACTION" + tbSuffix : "TCC_TRANSACTION";
     }

@@ -6,11 +6,16 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 
 /**
+ * 可补偿事务的切面，此说明tcc-transaction需要Spring AOP的支持
+ * <p>
  * Created by changmingxie on 10/30/15.
  */
 @Aspect
 public abstract class CompensableTransactionAspect {
 
+    /**
+     * 可补偿事务拦截器
+     */
     private CompensableTransactionInterceptor compensableTransactionInterceptor;
 
     public void setCompensableTransactionInterceptor(CompensableTransactionInterceptor compensableTransactionInterceptor) {

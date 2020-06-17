@@ -9,19 +9,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class FactoryBuilder {
 
-
     private FactoryBuilder() {
-
     }
 
     private static List<BeanFactory> beanFactories = new ArrayList<BeanFactory>();
-
     private static ConcurrentHashMap<Class, SingeltonFactory> classFactoryMap = new ConcurrentHashMap<Class, SingeltonFactory>();
 
     public static <T> SingeltonFactory<T> factoryOf(Class<T> clazz) {
-
         if (!classFactoryMap.containsKey(clazz)) {
-
             for (BeanFactory beanFactory : beanFactories) {
                 if (beanFactory.isFactoryOf(clazz)) {
                     classFactoryMap.putIfAbsent(clazz, new SingeltonFactory<T>(clazz, beanFactory.getBean(clazz)));

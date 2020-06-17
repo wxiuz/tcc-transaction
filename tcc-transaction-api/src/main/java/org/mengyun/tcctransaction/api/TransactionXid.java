@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.UUID;
 
 /**
+ * 事务ID，包括全局ID与分支ID
+ * <p>
  * Created by changmingxie on 10/26/15.
  */
 public class TransactionXid implements Xid, Serializable {
@@ -15,9 +17,13 @@ public class TransactionXid implements Xid, Serializable {
     private static final long serialVersionUID = -6817267250789142043L;
 
     private int formatId = 1;
-
+    /**
+     * 全局事务ID
+     */
     private byte[] globalTransactionId;
-
+    /**
+     * 分支事务标志符
+     */
     private byte[] branchQualifier;
 
     private static byte[] CUSTOMIZED_TRANSACTION_ID = "UniqueIdentity".getBytes();

@@ -17,6 +17,8 @@ import org.mengyun.tcctransaction.utils.ReflectionUtils;
 import java.lang.reflect.Method;
 
 /**
+ * 资源协调者拦截器，该拦截器主要处理的是Try阶段时，将@Compensable标注的方法加入到当前事务的参与者列表中
+ * <p>
  * Created by changmingxie on 11/8/15.
  */
 public class ResourceCoordinatorInterceptor {
@@ -29,17 +31,14 @@ public class ResourceCoordinatorInterceptor {
     }
 
     public Object interceptTransactionContextMethod(ProceedingJoinPoint pjp) throws Throwable {
-
         Transaction transaction = transactionManager.getCurrentTransaction();
-
         if (transaction != null) {
-
             switch (transaction.getStatus()) {
                 case TRYING:
+                    // 如果当前事务处于Trying状态，此时需要将当前方法加入到事务的参与者中，包括事务的入口方法
                     enlistParticipant(pjp);
                     break;
                 case CONFIRMING:
-                    break;
                 case CANCELLING:
                     break;
             }
@@ -48,8 +47,14 @@ public class ResourceCoordinatorInterceptor {
         return pjp.proceed(pjp.getArgs());
     }
 
+    /**
+     * 添加事务参与者到事务中
+     *
+     * @param pjp
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     */
     private void enlistParticipant(ProceedingJoinPoint pjp) throws IllegalAccessException, InstantiationException {
-
         Method method = CompensableMethodUtils.getCompensableMethod(pjp);
         if (method == null) {
             throw new RuntimeException(String.format("join point not found method, point is : %s", pjp.getSignature().getName()));
@@ -62,6 +67,7 @@ public class ResourceCoordinatorInterceptor {
         Transaction transaction = transactionManager.getCurrentTransaction();
         TransactionXid xid = new TransactionXid(transaction.getXid().getGlobalTransactionId());
 
+        // 如果调用方法时TransactionContext为null，此时会自动创建一个TransactionContext，并设置到方法执行参数中
         if (FactoryBuilder.factoryOf(compensable.transactionContextEditor()).getInstance().get(pjp.getTarget(), method, pjp.getArgs()) == null) {
             FactoryBuilder.factoryOf(compensable.transactionContextEditor()).getInstance().set(new TransactionContext(xid, TransactionStatus.TRYING.getId()), pjp.getTarget(), ((MethodSignature) pjp.getSignature()).getMethod(), pjp.getArgs());
         }

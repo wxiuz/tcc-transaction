@@ -8,18 +8,32 @@ import org.mengyun.tcctransaction.api.TransactionXid;
 import java.io.Serializable;
 
 /**
+ * TCC事务参与者Model
+ * <p>
  * Created by changmingxie on 10/27/15.
  */
 public class Participant implements Serializable {
 
     private static final long serialVersionUID = 4127729421281425247L;
-
+    
+    /**
+     * 当前参与者参与的事务ID
+     */
     private TransactionXid xid;
 
+    /**
+     * 参与者的Confirm方法
+     */
     private InvocationContext confirmInvocationContext;
 
+    /**
+     * 参与者的Cancel方法
+     */
     private InvocationContext cancelInvocationContext;
 
+    /**
+     * TransactionContext工具类
+     */
     Class<? extends TransactionContextEditor> transactionContextEditorClass;
 
     public Participant() {
@@ -43,10 +57,16 @@ public class Participant implements Serializable {
         this.xid = xid;
     }
 
+    /**
+     * 参与者回滚事务：即调用cancel方法
+     */
     public void rollback() {
         Terminator.invoke(new TransactionContext(xid, TransactionStatus.CANCELLING.getId()), cancelInvocationContext, transactionContextEditorClass);
     }
 
+    /**
+     * 参与者提交事务：即调用confirm方法
+     */
     public void commit() {
         Terminator.invoke(new TransactionContext(xid, TransactionStatus.CONFIRMING.getId()), confirmInvocationContext, transactionContextEditorClass);
     }
