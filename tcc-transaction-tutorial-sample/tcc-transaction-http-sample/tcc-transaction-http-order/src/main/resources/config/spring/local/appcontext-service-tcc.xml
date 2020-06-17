@@ -7,7 +7,7 @@
 
     <bean class="org.mengyun.tcctransaction.spring.recover.DefaultRecoverConfig">
         <property name="maxRetryCount" value="30"/>
-        <property name="recoverDuration" value="5"/>
+        <property name="recoverDuration" value="6000000"/>
         <property name="cronExpression" value="0/5 * * * * ?"/>
     </bean>
 
@@ -15,7 +15,7 @@
     class="org.mengyun.tcctransaction.spring.repository.SpringJdbcTransactionRepository">
     <property name="dataSource" ref="tccDataSource"/>
     <property name="domain" value="ORDER"/>
-    <property name="tbSuffix" value="_ORD"/>
+<!--    <property name="tbSuffix" value="_ORD"/>-->
     <property name="serializer" ref="objectSerializer"/>
     </bean>
 

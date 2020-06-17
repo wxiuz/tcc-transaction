@@ -61,13 +61,11 @@ public class TransactionRecovery {
                     transactionConfigurator.getTransactionRepository().delete(transaction);
                 } else if (transaction.getStatus().equals(TransactionStatus.CANCELLING)
                         || transaction.getTransactionType().equals(TransactionType.ROOT)) {
-
                     transaction.changeStatus(TransactionStatus.CANCELLING);
                     transactionConfigurator.getTransactionRepository().update(transaction);
                     transaction.rollback();
                     transactionConfigurator.getTransactionRepository().delete(transaction);
                 }
-
             } catch (Throwable throwable) {
                 if (throwable instanceof OptimisticLockException
                         || ExceptionUtils.getRootCause(throwable) instanceof OptimisticLockException) {
